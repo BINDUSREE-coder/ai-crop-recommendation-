@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crop Recommender</title>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f0;--card:#fff;--text:#1a3322;--green:#2e6443;--track:#dce7e1;--pill:#ebf3eb;--pilltx:#3b6045;--why:#766c65;--tog:#427050;--line:#e3ebe5;--sh:0 4px 16px rgba(26,51,34,.08);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101a14;--card:#1a2a20;--text:#e6f0e8;--green:#6fbf8a;--track:#2c3f33;--pill:#243a2c;--pilltx:#a9d8b8;--why:#b5aaa2;--tog:#8fd0a5;--line:#2c3f33;--sh:0 4px 16px rgba(0,0,0,.4)}}
+:root[data-theme="dark"]{--bg:#101a14;--card:#1a2a20;--text:#e6f0e8;--green:#6fbf8a;--track:#2c3f33;--pill:#243a2c;--pilltx:#a9d8b8;--why:#b5aaa2;--tog:#8fd0a5;--line:#2c3f33;--sh:0 4px 16px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Quicksand','Fredoka',system-ui,sans-serif}
+.wrap{max-width:420px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:22px;margin:4px 0 4px}
+.sub{font-size:14px;color:var(--why);margin:0 0 16px}
+.card{background:var(--card);border-radius:20px;box-shadow:var(--sh);padding:20px;margin-bottom:16px}
+.search{position:relative}
+input{width:100%;font:inherit;font-size:16px;font-weight:600;padding:13px 16px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--text);outline:none}
+input:focus{border-color:var(--green)}
+.list{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:var(--card);border-radius:14px;box-shadow:var(--sh);border:1px solid var(--line);max-height:260px;overflow-y:auto;z-index:5;display:none}
+.list div{padding:11px 16px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+.list div small{color:var(--why);font-weight:500}
+.list div:hover,.list div.on{background:var(--pill)}
+.list b{color:var(--green)}
+.rep h3{margin:0 0 4px;font-size:17px}.rep .sub{margin:0 0 12px;font-size:13px}.g{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.t{background:var(--pill);border-radius:14px;padding:10px 6px;text-align:center}.t span{display:block;font-size:11px;font-weight:700;color:var(--pilltx);letter-spacing:.04em}.t b{display:block;font-size:17px;margin-top:2px;color:var(--text)}.t small{font-size:11px;color:var(--why);font-weight:600}.rank{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.title{font-size:20px;font-weight:700;margin:0 0 12px}
+.bar{height:8px;border-radius:99px;background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--green);border-radius:99px}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.tag{background:var(--pill);color:var(--pilltx);font-size:13px;font-weight:600;padding:6px 12px;border-radius:99px}
+.why{color:var(--why);font-size:14px;line-height:1.5;margin:0 0 10px}
+.tog{background:none;border:0;padding:4px 0;font:inherit;font-size:15px;font-weight:700;color:var(--tog);cursor:pointer}
+.plan{display:none;font-size:14px;line-height:1.55;margin-top:8px;padding-top:10px;border-top:1px solid var(--line)}
+.plan.open{display:block}
+.plan p{margin:0 0 6px}
+.empty{text-align:center;color:var(--why);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🌾 Crop Recommender</h1>
+  <p class="sub">Type the first letter of your city to get crop suggestions.</p>
+  <div class="card search">
+    <input id="q" type="text" placeholder="Search city, e.g. B → Bengaluru" autocomplete="off" aria-label="Search city">
+    <div class="list" id="list"></div>
+  </div>
+  <div id="out"><div class="card empty">Select a city to see recommendations.</div></div>
+</div>
+<script>
+var S={AP:"Andhra Pradesh",AR:"Arunachal Pradesh",AS:"Assam",BR:"Bihar",CG:"Chhattisgarh",DL:"Delhi",GA:"Goa",GJ:"Gujarat",HR:"Haryana",HP:"Himachal Pradesh",JK:"Jammu & Kashmir",JH:"Jharkhand",KA:"Karnataka",KL:"Kerala",MP:"Madhya Pradesh",MH:"Maharashtra",MN:"Manipur",ML:"Meghalaya",MZ:"Mizoram",NL:"Nagaland",OD:"Odisha",PB:"Punjab",RJ:"Rajasthan",SK:"Sikkim",TN:"Tamil Nadu",TG:"Telangana",TR:"Tripura",UP:"Uttar Pradesh",UK:"Uttarakhand",WB:"West Bengal",CH:"Chandigarh",PY:"Puducherry",LD:"Ladakh",AN:"Andaman & Nicobar"};
+var Z={AP:"S",TG:"S",KA:"S",KL:"S",TN:"S",PY:"S",GA:"S",AN:"S",MH:"W",GJ:"W",RJ:"W",MP:"W",CG:"W",PB:"P",HR:"P",UP:"P",DL:"P",BR:"P",CH:"P",WB:"E",OD:"E",JH:"E",AS:"E",AR:"E",MN:"E",ML:"E",MZ:"E",NL:"E",TR:"E",HP:"H",JK:"H",UK:"H",SK:"H",LD:"H"};
+var D={
+AP:"Visakhapatnam,Vijayawada,Guntur,Nellore,Tirupati,Kurnool,Rajahmundry,Kakinada,Anantapur,Kadapa,Eluru,Ongole,Chittoor,Machilipatnam,Srikakulam",
+TG:"Hyderabad,Warangal,Nizamabad,Karimnagar,Khammam,Ramagundam,Mahbubnagar,Nalgonda,Adilabad,Siddipet",
+KA:"Bengaluru,Mysuru,Hubballi,Mangaluru,Belagavi,Kalaburagi,Davanagere,Ballari,Vijayapura,Shivamogga,Tumakuru,Raichur,Bidar,Hassan,Udupi,Mandya,Chikkamagaluru",
+KL:"Thiruvananthapuram,Kochi,Kozhikode,Thrissur,Kollam,Kannur,Alappuzha,Palakkad,Malappuram,Kottayam,Kasaragod,Idukki",
+TN:"Chennai,Coimbatore,Madurai,Tiruchirappalli,Salem,Tirunelveli,Erode,Vellore,Thoothukudi,Thanjavur,Dindigul,Hosur,Nagercoil,Karur,Kanchipuram,Cuddalore,Tiruppur",
+PY:"Puducherry,Karaikal",
+GA:"Panaji,Margao,Vasco da Gama,Mapusa",
+AN:"Port Blair",
+MH:"Mumbai,Pune,Nagpur,Nashik,Aurangabad,Solapur,Thane,Kolhapur,Amravati,Nanded,Sangli,Jalgaon,Akola,Latur,Ahmednagar,Dhule,Ratnagiri,Satara,Beed,Yavatmal,Wardha,Chandrapur",
+GJ:"Ahmedabad,Surat,Vadodara,Rajkot,Bhavnagar,Jamnagar,Junagadh,Gandhinagar,Anand,Bharuch,Mehsana,Bhuj,Porbandar,Navsari,Morbi,Palanpur",
+RJ:"Jaipur,Jodhpur,Udaipur,Kota,Bikaner,Ajmer,Bhilwara,Alwar,Sikar,Sri Ganganagar,Pali,Bharatpur,Chittorgarh,Barmer,Jaisalmer,Tonk",
+MP:"Bhopal,Indore,Jabalpur,Gwalior,Ujjain,Sagar,Dewas,Satna,Ratlam,Rewa,Katni,Chhindwara,Burhanpur,Khandwa,Vidisha,Hoshangabad",
+CG:"Raipur,Bhilai,Bilaspur,Korba,Durg,Rajnandgaon,Jagdalpur,Raigarh,Ambikapur",
+PB:"Ludhiana,Amritsar,Jalandhar,Patiala,Bathinda,Mohali,Pathankot,Hoshiarpur,Moga,Firozpur,Sangrur,Barnala",
+HR:"Gurugram,Faridabad,Panipat,Ambala,Karnal,Hisar,Rohtak,Sonipat,Yamunanagar,Sirsa,Bhiwani,Kurukshetra,Jind,Rewari",
+UP:"Lucknow,Kanpur,Varanasi,Agra,Prayagraj,Meerut,Ghaziabad,Noida,Bareilly,Aligarh,Moradabad,Gorakhpur,Saharanpur,Jhansi,Mathura,Firozabad,Muzaffarnagar,Ayodhya,Etawah,Rampur,Shahjahanpur,Sultanpur,Azamgarh,Basti",
+DL:"New Delhi,Delhi,Dwarka,Rohini",
+BR:"Patna,Gaya,Bhagalpur,Muzaffarpur,Darbhanga,Purnia,Arrah,Begusarai,Katihar,Munger,Chhapra,Bettiah,Sasaram,Hajipur",
+CH:"Chandigarh",
+WB:"Kolkata,Howrah,Durgapur,Asansol,Siliguri,Bardhaman,Malda,Kharagpur,Haldia,Darjeeling,Jalpaiguri,Cooch Behar,Berhampore,Krishnanagar",
+OD:"Bhubaneswar,Cuttack,Rourkela,Berhampur,Sambalpur,Puri,Balasore,Bhadrak,Baripada,Jharsuguda,Koraput",
+JH:"Ranchi,Jamshedpur,Dhanbad,Bokaro,Deoghar,Hazaribagh,Giridih,Ramgarh,Medininagar",
+AS:"Guwahati,Silchar,Dibrugarh,Jorhat,Nagaon,Tinsukia,Tezpur,Bongaigaon,Dhubri",
+AR:"Itanagar,Naharlagun,Pasighat",
+MN:"Imphal,Thoubal",
+ML:"Shillong,Tura",
+MZ:"Aizawl,Lunglei",
+NL:"Kohima,Dimapur",
+TR:"Agartala,Udaipur Tripura",
+HP:"Shimla,Dharamshala,Solan,Mandi,Kullu,Manali,Palampur,Una,Hamirpur,Bilaspur HP",
+JK:"Srinagar,Jammu,Anantnag,Baramulla,Udhampur,Kathua,Sopore",
+UK:"Dehradun,Haridwar,Roorkee,Haldwani,Rudrapur,Nainital,Rishikesh,Kashipur,Almora",
+SK:"Gangtok,Namchi",
+LD:"Leh,Kargil"
+};
+var C=[];
+Object.keys(D).forEach(function(k){D[k].split(",").forEach(function(n){C.push({n:n,s:k})})});
+C.sort(function(a,b){return a.n.localeCompare(b.n)});
+
+var CROPS={
+P:[["Wheat",82,"Rabi","120-150 days","Medium","nitrogen (n), temperature, soil ph, rainfall",["Apply 120 kg N, 60 kg P2O5, 40 kg K2O per hectare.","Split nitrogen: half at sowing, half after first irrigation.","Keep soil pH between 6.0 and 7.5."]],["Rice",74,"Kharif","110-140 days","High","humidity, rainfall, nitrogen (n), temperature",["Apply 100 kg N, 50 kg P2O5, 50 kg K2O per hectare.","Add zinc sulphate (25 kg/ha) in zinc-deficient soils.","Maintain 5 cm standing water during early growth."]],["Maize",61,"Kharif or Rabi","90-110 days","Medium","phosphorus (p), temperature, humidity, soil ph, rainfall",["Apply 120 kg N, 60 kg P2O5, 40 kg K2O per hectare.","Use well-drained loam with pH 5.8 to 7.","Top-dress nitrogen at knee-high stage."]]],
+S:[["Rice",80,"Kharif or Rabi","110-135 days","High","rainfall, humidity, temperature, soil ph",["Apply 100 kg N, 50 kg P2O5, 50 kg K2O per hectare.","Add organic manure (5 t/ha) before puddling.","Use split nitrogen doses at tillering and panicle stages."]],["Sugarcane",70,"Year-round","10-14 months","High","temperature, humidity, rainfall, potassium (k)",["Apply 250 kg N, 100 kg P2O5, 120 kg K2O per hectare.","Earth up and trash-mulch to conserve moisture.","Drip irrigation saves up to 40% water."]],["Ragi (Finger millet)",63,"Kharif","100-120 days","Low","temperature, soil ph, rainfall",["Apply 50 kg N, 40 kg P2O5, 25 kg K2O per hectare.","Add 10 t/ha farmyard manure.","Suits red loam soils with good drainage."]]],
+W:[["Cotton",78,"Kharif","150-180 days","Medium","temperature, soil ph, potassium (k), rainfall",["Apply 100 kg N, 50 kg P2O5, 50 kg K2O per hectare.","Black cotton soil retains moisture well.","Scout for bollworm every week."]],["Soybean",69,"Kharif","90-110 days","Medium","phosphorus (p), temperature, rainfall, soil ph",["Apply 20 kg N, 60 kg P2O5, 40 kg K2O per hectare.","Treat seed with Rhizobium culture.","Avoid waterlogging."]],["Groundnut",60,"Kharif or Summer","100-120 days","Low","temperature, soil ph, calcium, rainfall",["Apply 25 kg N, 50 kg P2O5, 40 kg K2O per hectare.","Add gypsum (500 kg/ha) at pegging.","Sandy loam soil works best."]]],
+E:[["Rice",85,"Kharif","110-150 days","High","rainfall, humidity, temperature, soil ph",["Apply 80 kg N, 40 kg P2O5, 40 kg K2O per hectare.","Lime acidic soils to reach pH 5.5 to 6.5.","Transplant 20-25 day old seedlings."]],["Jute",68,"Kharif","120-150 days","High","humidity, rainfall, temperature",["Apply 60 kg N, 30 kg P2O5, 30 kg K2O per hectare.","Sow in March to May on well-drained alluvial soil.","Retting needs clean slow-moving water."]],["Maize",58,"Kharif or Rabi","90-110 days","Medium","phosphorus (p), temperature, humidity, soil ph, rainfall",["Apply 120 kg N, 60 kg P2O5, 40 kg K2O per hectare.","Ensure good drainage in high-rainfall areas.","Top-dress nitrogen at knee-high stage."]]],
+H:[["Potato",76,"Spring or Summer","90-120 days","Medium","temperature, soil ph, potassium (k), humidity",["Apply 120 kg N, 80 kg P2O5, 100 kg K2O per hectare.","Use certified disease-free seed tubers.","Earth up twice to protect tubers."]],["Maize",64,"Kharif","100-120 days","Medium","temperature, rainfall, soil ph",["Apply 100 kg N, 50 kg P2O5, 40 kg K2O per hectare.","Terrace slopes to reduce erosion.","Sow after last frost."]],["Barley",57,"Rabi","110-130 days","Low","temperature, soil ph, rainfall",["Apply 60 kg N, 30 kg P2O5, 20 kg K2O per hectare.","Tolerates cool, dry conditions.","Sow in October to November."]]]
+};
+
+var E={Wheat:"🌾",Rice:"🍚",Maize:"🌽",Sugarcane:"🎋","Ragi (Finger millet)":"🌱",Cotton:"☁️",Soybean:"🫘",Groundnut:"🥜",Jute:"🧵",Potato:"🥔",Barley:"🌾"};
+/* N,P,K kg/ha (available), pH, avg temp C, annual rain mm: approximate state averages */
+var R={AP:[240,22,270,7.2,28,940],TG:[230,20,280,7.4,27,900],KA:[250,24,300,6.6,25,1150],KL:[280,18,180,5.5,27,3000],TN:[220,20,260,7.3,28,950],PY:[220,20,240,7.2,28,1200],GA:[270,16,170,5.6,27,3000],AN:[260,15,160,5.8,27,3100],MH:[220,18,320,7.8,27,1000],GJ:[200,20,300,7.9,27,800],RJ:[170,15,260,8.1,26,500],MP:[240,18,310,7.3,25,1050],CG:[230,16,250,6.4,26,1300],PB:[260,32,260,7.9,24,600],HR:[250,28,270,8.0,25,550],UP:[240,22,240,7.6,25,950],DL:[230,26,250,7.8,25,700],BR:[250,26,220,7.2,26,1200],CH:[250,28,260,7.8,24,1100],WB:[270,28,200,6.3,26,1750],OD:[240,18,200,5.9,27,1450],JH:[220,16,190,5.8,25,1300],AS:[290,20,170,5.4,24,2400],AR:[300,18,160,5.3,19,2800],MN:[290,20,170,5.5,21,1500],ML:[300,16,150,5.2,20,2800],MZ:[290,16,150,5.3,21,2400],NL:[290,18,160,5.4,20,2000],TR:[280,18,170,5.4,25,2100],HP:[280,24,230,6.2,15,1200],JK:[270,22,240,6.8,13,1000],UK:[280,22,220,6.4,17,1550],SK:[300,18,160,5.4,14,2900],LD:[160,12,200,8.2,5,100]};
+function rep(c){var v=R[c.s]||R.MH,x=document.getElementById("rep"),L=[["NITROGEN (N)",v[0],"kg/ha"],["PHOSPHORUS (P)",v[1],"kg/ha"],["POTASSIUM (K)",v[2],"kg/ha"],["SOIL pH",v[3].toFixed(1),v[3]<6?"acidic":v[3]>7.5?"alkaline":"neutral"],["TEMPERATURE",v[4]+"°C","annual avg"],["RAINFALL",v[5],"mm / year"]];x.style.display="block";x.innerHTML='<h3>🧪 Soil and climate report</h3><p class="sub">'+esc(c.n)+', '+S[c.s]+' (approximate regional averages)</p><div class="g">'+L.map(function(a){return'<div class="t"><span>'+a[0]+'</span><b>'+a[1]+'</b><small>'+a[2]+'</small></div>'}).join("")+'</div>'}
+var q=document.getElementById("q"),list=document.getElementById("list"),out=document.getElementById("out"),cur=[],idx=-1;
+function esc(s){return s.replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function show(){
+  var v=q.value.trim().toLowerCase();
+  if(!v){list.style.display="none";return}
+  var a=C.filter(function(c){return c.n.toLowerCase().indexOf(v)===0});
+  var b=C.filter(function(c){var l=c.n.toLowerCase();return l.indexOf(v)>0});
+  cur=a.concat(b).slice(0,30);idx=-1;
+  list.innerHTML=cur.length?cur.map(function(c,i){var m=c.n.toLowerCase().indexOf(v),h=m<0?esc(c.n):esc(c.n.slice(0,m))+"<b>"+esc(c.n.slice(m,m+v.length))+"</b>"+esc(c.n.slice(m+v.length));return'<div data-i="'+i+'"><span>'+h+'</span><small>'+S[c.s]+'</small></div>'}).join(""):'<div><small>No matching city</small></div>';
+  list.style.display="block";
+}
+function pick(i){var c=cur[i];if(!c)return;q.value=c.n;list.style.display="none";render(c)}
+function render(c){
+  var z=Z[c.s]||"W",labels=["★ BEST MATCH","OPTION 2","OPTION 3"];
+  out.innerHTML='<p class="sub">Recommendations for <b>'+esc(c.n)+'</b>, '+S[c.s]+'</p>'+CROPS[z].map(function(r,i){
+    return '<div class="card"><div class="rank">'+labels[i]+'</div><h2 class="title">'+r[0]+' '+(E[r[0]]||"🌱")+' – '+r[1]+'% Suitable</h2><div class="bar"><i style="width:'+r[1]+'%"></i></div><div class="tags"><span class="tag">🗓 '+r[2]+'</span><span class="tag">⏱ '+r[3]+'</span><span class="tag">💧 Water: '+r[4]+'</span></div><p class="why">Why: '+r[5]+' suit this crop.</p><button class="tog" aria-expanded="false">▶ Soil &amp; fertilizer plan</button><div class="plan">'+r[6].map(function(t){return"<p>• "+t+"</p>"}).join("")+'</div></div>';
+  }).join("");
+}
+out.addEventListener("click",function(e){var b=e.target.closest(".tog");if(!b)return;var p=b.nextElementSibling,o=p.classList.toggle("open");b.innerHTML=(o?"▼":"▶")+" Soil &amp; fertilizer plan";b.setAttribute("aria-expanded",o)});
+q.addEventListener("input",show);
+q.addEventListener("focus",show);
+q.addEventListener("keydown",function(e){
+  var els=list.querySelectorAll("[data-i]");
+  if(e.key==="ArrowDown"&&els.length){idx=Math.min(idx+1,els.length-1)}
+  else if(e.key==="ArrowUp"&&els.length){idx=Math.max(idx-1,0)}
+  else if(e.key==="Enter"){pick(idx<0?0:idx);return}
+  else return;
+  e.preventDefault();els.forEach(function(x,i){x.classList.toggle("on",i===idx)});if(els[idx])els[idx].scrollIntoView({block:"nearest"});
+});
+list.addEventListener("mousedown",function(e){var d=e.target.closest("[data-i]");if(d){e.preventDefault();pick(+d.dataset.i)}});
+document.addEventListener("click",function(e){if(!e.target.closest(".search"))list.style.display="none"});
+</script>
+</body>
+</html>
